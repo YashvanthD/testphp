@@ -1,0 +1,28 @@
+FROM php:7.2-fpm-alpine
+LABEL maintainer = "Kevin van der Burgt <kevin@zdev.com>"
+
+# Change the work directory
+WORKDIR /var/www
+
+# Copy the database files, the composer installer requires some parts to exists
+COPY database /var/www/database
+
+# Copy the vendor listing files
+COPY composer.*  /var/www/
+
+# Copy the php configuration
+COPY php.ini /usr/local/etc/php/
+
+# Install composer, composer dependencies and then remove composer itself.
+RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
+    && php composer-setup.php \
+    && php -r "unlink('composer-setup.php');" \
+    && php composer.phar install --no-ansi --no-dev --no-interaction --no-progress --no-scripts --optimize-autoloader \
+    && rm composer.phar
+
+# Copy the project files
+COPY . /var/www
+
+RUN chown -R www-data:www-data \
+    /var/www/storage \
+    /var/www/bootstrap/cache
